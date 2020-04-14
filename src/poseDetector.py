@@ -48,12 +48,16 @@ class PoseDetector:
     # Get pose
     (success, rotV, tranV) = cv.solvePnP(WORLD_SPACE_POINTS, imagePoints, cam_matrix, dist_coeffs, flags=cv.SOLVEPNP_ITERATIVE)
 
+    # Handling values, convert rotation to degrees and scale translation using biocular width
     rotV = [math.degrees(r) for r in rotV]
-
+    # this scalar should convert pixels to centimeters by approximating the size of the head
     translation_scale = BIOCULAR_BREADTH / (landmarks[45][0] - landmarks[36][0])
     tranV = [translation_scale * x for x in tranV]
+
     if success:
+      # N.B. OpenTrack rotation order is Yaw, Pitch, Roll, OpenCV is Pitch, Yaw, Roll
+      # Also, Pitch is inverted from solvePnP
       return Transform(x = tranV[0], y = tranV[1], z = tranV[2],
-                       yaw = rotV[0], pitch = rotV[1], roll = rotV[2])
+                       yaw = rotV[1], pitch = -rotV[0], roll = rotV[2])
     else:
       return None
